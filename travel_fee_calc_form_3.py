@@ -1226,7 +1226,7 @@ class createTableThirdDiaglog(QDialog):
 
         # 创建EBD折扣表
         col_name = ['起始日期','终止日期','提前预定天数','房费折扣','餐费折扣',\
-                    '能混用的优惠方式','是否适用于第三人房费','是否适用于餐费']
+                    '能混用的优惠方式','是否适用于第三人房费','是否适用于餐费','不适用的房型']
         df_output = DataFrame(columns=col_name)
         df_output.set_index(list(df_output.keys())[0], inplace=True)
         df_output_all.update({'EBD折扣表':df_output})
