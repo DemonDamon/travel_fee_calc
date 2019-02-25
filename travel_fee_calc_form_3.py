@@ -1238,6 +1238,15 @@ class createTableThirdDiaglog(QDialog):
         df_output.set_index(list(df_output.keys())[0], inplace=True)
         df_output_all.update({'LSD折扣表':df_output})
 
+        # 创建其他折扣表
+        col_name = ['预订有效起始日期','预订有效终止日期','入住有效起始日期','入住有效终止日期',\
+                    '优惠入住房型组合','各个房型最少入住天数','最少总入住天数','成人人数要求',\
+                    '成人年龄','儿童人数要求','儿童年龄','餐型要求','是否适用于第三人','是否可以混住',\
+                    '已免除费用','房费折扣','餐费折扣','交通折扣']
+        df_output = DataFrame(columns=col_name)
+        df_output.set_index(list(df_output.keys())[0], inplace=True)
+        df_output_all.update({'其它折扣表':df_output})
+
         # 创建其他信息表
         df_output = DataFrame(columns=['信息名称','数值'])
         df_output.loc[0,'信息名称'] = '房价是否包含环境税'; df_output.loc[0,'数值'] = '否'
