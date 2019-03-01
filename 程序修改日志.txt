@@ -1,0 +1,121 @@
+程序修改日志：
+2019.01.01
+1. 变量改为
+	入住时间， 优惠折扣， 成人人数（最多为3人）， 儿童人数， 婴儿人数
+	免房费天数， 免费夜价格， 第三成人免费夜价格（如果有值表示是固定的，否则是根据房型而改变），
+	强制费单价， 强制费收取天数， 强制餐单价， 房价是否包含环境税， 交通是否有优惠， 
+	儿童费用是否有优惠
+
+2. 其他单价表的“名称”改为：
+	成人交通费
+	儿童交通费
+	成人环境税
+	儿童环境税
+	婴儿费用
+	免费夜餐费
+	房型1第三人费用
+	房型2第三人费用
+	房型3第三人费用
+	房型4第三人费用
+		...
+	房型n第三人费用
+
+3. 计算儿童费用（儿童第三人房费）的时候弹出对话框，输入第一个和第二个儿童的费用
+
+4. 价格计算公式改为：
+	if 包环境税：
+
+	else：
+
+2019.01.01
+1. 增加创建表格功能，一键创建所需表格
+
+2019.01.04
+1. 自适应窗口大小
+
+
+2019.01.14
+1. 在原来计算的基础上+升级餐费用=全按合同价格计算的结果
+	创建表格的逻辑，不需要最小入住人数
+2. 添加交通方式表格的创建如，A，B两种交通方式，则其他单价表中有，
+	成人A交通费，成人B交通费，儿童A交通费，儿童B交通费，婴儿A交通费，婴儿B交通费
+	（还有单程和往返的区别）
+3. 重新设计数据表字段
+	---> 房型价格表
+	'起始时间','终止时间','房型全称','最大容纳人数(无附加费)','最大容纳人数(有附加费)'
+			2.1 field：房型、起始日期、终止日期、最多入住人数(无附加费)、最多入住人数(有附加费)
+			2.2 最多入住人数(有附加费)的录入，'(2+2)/3'表示'2大+2小或3大','(2+4)/(4+2)'表示'2大+4小或4大+2小'
+			2.3 查房型的逻辑是，查找最多入住人数大于或等于实际入住人数的房间
+4. 提前天数与折扣变化问题
+5. 交通是否往返 -- 默认‘是’
+6. 修改其他单价表，变成增量信息，具体计算为 “变量单价”*成人人数*天数
+7. 保留“强制费收取天数”， 去掉“强制费单价”，将“强制餐单价”放进数据表。强制费即强制餐费用，成人和儿童的分别不一样。加
+	“成人强制(餐)费单价”和“儿童强制(餐)费单价”
+8. 增加“附加费”单价到数据表，附加费就是房间节假日，每晚增加的费用。一般是成人才有附加费
+9. 打包价格计算，同时计算打包价格和合同价格。加一个打包价格表！如果打包没有延住的价格需要在合同里散算加在打包价里
+	注意：打包价一定包含住宿/交通/餐费/环境税，而且只包含2人，第三人的所有费用都要另外算
+10. 住付优惠不分房型；免费夜费用 是指 免掉的房费；免费夜强制费 是指 免费夜的餐费（都是一样的）；
+11. 每个价单代表一个酒店
+
+2019.01.29
+1.在表格创建时，有页面跳转功能
+  合同房型价格表 ---> 有效日期范围
+
+    def createTableForIsland(self):
+        if self.datapath == '':
+            self.msg("错误","请输入数据表文件夹路径！")
+        else:
+            dialog3 = inputDialog3()
+            if dialog3.exec_():
+                if (dialog3.input.text() is None) or (dialog3.input.text() == ''):
+                    self.msg("错误","请输入数据表名称！")
+                else:
+                    writer = ExcelWriter(os.path.join(self.datapath,dialog3.input.text()+'.xlsx'))
+                    df = DataFrame(columns=dialog3.HeaderLabelsList)
+                    date = DataFrame(columns=[])
+                    for row_Id in range(dialog3.setRowNum):
+                        for col_Id, col_name in enumerate(dialog3.HeaderLabelsList):
+                            if dialog3.tableWidget1.item(row_Id, col_Id) is not None:
+                                df.loc[row_Id,col_name] = dialog3.tableWidget1.item(row_Id, col_Id).text()
+                                if col_name == '最小容纳人数':
+                                    min_num = int(df.loc[row_Id,col_name])
+                                elif col_name == '最大容纳人数':
+                                    max_num = int(df.loc[row_Id,col_name])
+                    df_date = DataFrame({'起始日期':df['起始时间'], '终止日期':df['终止时间']})
+                    df_date = df_date.dropna(axis=0, how='all')
+                    df_house = DataFrame({'房型全称':df['房型全称']})
+                    df_house = df_house.dropna(axis=0, how='all')
+                    df_output = DataFrame(columns=['房型','起始日期','终止日期','人数','单价'])
+                    for k,house_type in enumerate(df_house['房型全称']):
+                        sheet_1 = DataFrame(columns=['房型','起始日期','终止日期','人数','单价'])
+                        for i in range(df_date.shape[0]):
+                            for j, num in enumerate(range(min_num,max_num+1)):
+                                sheet_1.loc[i*len(range(min_num,max_num+1))+j,'人数'] = num
+                                sheet_1.loc[i*len(range(min_num,max_num+1))+j,'起始日期'] = df['起始时间'].iloc[i]
+                                sheet_1.loc[i*len(range(min_num,max_num+1))+j,'终止日期'] = df['终止时间'].iloc[i]
+                                sheet_1.loc[i*len(range(min_num,max_num+1))+j,'房型'] = house_type
+                        df_output = df_output.append(sheet_1)
+                    df_output.set_index(list(df_output.keys())[0], inplace=True)
+                    df_output.to_excel(writer, sheet_name='房型价格表')
+                    #
+                    df_output = DataFrame(columns=['房型全称','房型简称'])
+                    for i,house_type in enumerate(df_house['房型全称']):
+                        df_output.loc[i,'房型全称'] = house_type
+                        df_output.loc[i,'房型简称'] = '房型' + str(i+1)
+                    df_output.set_index(list(df_output.keys())[0], inplace=True)
+                    df_output.to_excel(writer, sheet_name='房型简称')
+                    #
+                    df_output = DataFrame(columns=['名称','单位','价格'])
+                    df_output.loc[0,'名称'] = '成人交通费'; df_output.loc[0,'单位'] = 'USD'
+                    df_output.loc[1,'名称'] = '儿童交通费'; df_output.loc[1,'单位'] = 'USD'
+                    df_output.loc[2,'名称'] = '成人环境税'; df_output.loc[2,'单位'] = 'USD'
+                    df_output.loc[3,'名称'] = '儿童环境税'; df_output.loc[3,'单位'] = 'USD'
+                    df_output.loc[4,'名称'] = '婴儿环境税'; df_output.loc[4,'单位'] = 'USD'
+                    for i in range(5,5+df_house.shape[0]):
+                        df_output.loc[i,'名称'] = df_house['房型全称'].iloc[i-5] + '第三人费用'
+                        df_output.loc[i,'单位'] = 'USD'
+                    df_output.set_index(list(df_output.keys())[0], inplace=True)
+                    df_output.to_excel(writer, sheet_name='其他单价表')
+                    writer.save()
+                    writer.close()
+                    reply = QMessageBox.information(self,'提示','已创建'+str(dialog3.input.text())+'.xlsx数据表！')
